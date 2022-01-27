@@ -1,4 +1,4 @@
-# CS1821_R13-Robotics-Project
+# CS1822_R13-Robotics-Project
 
 Project Ideas:
 - Road Mapper: Writes on paper different features on a road surface(e.g road markings, bus stop). Uses markers to denote different features.
