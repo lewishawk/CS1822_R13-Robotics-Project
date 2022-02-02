@@ -4,7 +4,6 @@ import lejos.utility.Delay;
 public class MovementController
 {
 	
-	//
 	//	Current things that could be improved:
 	//		- Could have two arrays of motors, on called mLeft and mRight
 	//		  so that we could know which side is which and the user would 
@@ -23,15 +22,15 @@ public class MovementController
 	final double distanceBetweenWheels = 11.0;	//cm  []-----+-----[] 
 											//	      <-------------> this distance between the 2 motored wheels
 	// Private Vars
-	private int[] coords;
-	private int currentAngle;
+	private double[] coords;
+	private double currentAngle;
 	private double wheelSpeed = 100.0;	//  Degrees/sec lower speed means things take more time but are more accurate
 	private double actualSpeed;
 	private BaseRegulatedMotor[] Motors;
 	
 	//Init
 	public MovementController(BaseRegulatedMotor[] motors) {
-		this.coords = new int[] {0, 0};
+		this.coords = new double[] {0.0, 0.0};
 		this.currentAngle = 0;
 		this.Motors = motors;
 		
@@ -43,12 +42,12 @@ public class MovementController
 	}
 	
 	//Coords getter
-	public int[] getCoords() {
+	public double[] getCoords() {
 		return this.coords;
 	}
 	
 	//Angle getter
-	public int getAngle() {
+	public double getAngle() {
 		return this.currentAngle;
 	}
 	
@@ -66,6 +65,39 @@ public class MovementController
 
 		this.actualSpeed = wheelCircum * percentSpeed;	// cm/s
 	}
+	
+	public void goToPoint(double coord[]) {
+		
+		//		 x2, y2
+		//        /
+		//       /
+		//      /
+		//	   /
+		//	x1, y1
+		//
+		// 	need to find the angle to the new coord, then find how much we turn to go in that direction
+		// 	then find the distance between them and go forward that far
+		//
+		//	So, we find the difference which is [ (x2 - x1) , (y2 - y1) ]
+		// 	Then we know the difference, we can find the angle 
+		//  distance = sqrt((x2 - x1)^2 + (y2 - y1)^2 )
+		// 	(y2 - y1) 		= sin(angle) * distance
+		//  (y2 - y1) / distance = sin(angle)
+		// 	angle = sin-1((y2 - y1) / distance)
+		
+		double[] differenceCoords = new double[] {coord[0] - this.coords[0], coord[1] - this.coords[1]}; 
+		double height = differenceCoords[1];
+		double distance = Math.sqrt(Math.pow(height, 2) + Math.pow(differenceCoords[0], 2));
+		
+		double angle = Math.asin(height / distance);
+		
+		double angleChange = angle - this.getAngle();
+		
+		this.turnAngle(angleChange);
+		this.goForward(distance);
+		
+	}
+	
 	
 	//calculates time for the wheels to spin for any angle of turn
 	private double findDegreesForTurn(double angle) {
@@ -96,10 +128,10 @@ public class MovementController
 		
 		//check that angle isn't greater then 360 or -360
 		if(angle >= 0)
-			angle = angle % 360;
+			angle = angle % 360.0;
 		
 		else
-			angle = angle % -360;
+			angle = angle % -360.0;
 		
 		BaseRegulatedMotor MainMotor = this.Motors[0];	//Sets main motor to sync with
 		
@@ -215,7 +247,7 @@ public class MovementController
 		double height = Math.sin(angle) * distance;
 		double width = Math.cos(angle) * distance;
 		
-		this.coords = new int[] {(int) (this.coords[0] + width), (int) (this.coords[1] + height)};
+		this.coords = new double[] {(this.coords[0] + width), (this.coords[1] + height)};
 		
 	}
 	
