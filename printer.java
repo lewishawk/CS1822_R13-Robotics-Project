@@ -21,7 +21,6 @@ import lejos.hardware.sensor.EV3TouchSensor;
 
 public class printer{
 	
-
 	//	Constants
 	
 	//	Motors for Movement 
