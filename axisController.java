@@ -6,8 +6,9 @@ import lejos.robotics.SampleProvider;
 
 public class axisController{
 
-	final private 	int 							MOTOR_SPEED	= 90;
-	final private 	int 							MOTOR_ACCEL	= 3000;
+	final private 	int 							MOTOR_SPEED	= 10;
+	final private	int 							MOTOR_MOVEMENT_SPEED = 1;
+	final private 	int 							MOTOR_ACCEL	= 1000;
 	
 	private 		BaseRegulatedMotor				axisMotor;
 	private 		EV3TouchSensor[]				axisSensors;
@@ -19,7 +20,7 @@ public class axisController{
 	private			Map<EV3TouchSensor, Integer>	axisSensorDistances;			
 	
 	public axisController(BaseRegulatedMotor Motor, EV3TouchSensor[] Sensors) {
-		
+		// init
 		this.axisMotor		= Motor;
 		this.axisMotor.setAcceleration(MOTOR_ACCEL);
 		this.axisMotor.setSpeed(MOTOR_SPEED);
@@ -63,7 +64,7 @@ public class axisController{
 		float[] samples = new float[] {0f, 0f};
 		
 		int degreeCounter = 0;
-		
+		System.out.println("Starting Calibration");
 		while(true) {
 			//	Get Samples
 			TouchSen1.fetchSample(samples, 0);
@@ -75,19 +76,22 @@ public class axisController{
 				//	Add sensor 0 to dictinary for distance and set to 0
 				this.axisSensorDistances.put(this.axisSensors[0], 0);
 				this.axisRearSensor = this.axisSensors[0];
+				this.axisMotor.resetTachoCount();
 				
 				while(true) {
-					
+					System.out.println(degreeCounter);
 					//Using the other sensor, go until it hits something
 					TouchSen2.fetchSample(samples, 1);
 					if(samples[1] > 0.8f) {
 						//	Once hit wall, add to dictionary and use counter to know its distance
-						this.axisSensorDistances.put(this.axisSensors[1], degreeCounter);
+						this.axisSensorDistances.put(this.axisSensors[1], this.axisMotor.getTachoCount());
 						this.axisFrontSensor = this.axisSensors[1];
+						System.out.println("Calibration Done");
 						break;
 					}
-					this.axisMotor.rotate(1, true);
-					degreeCounter++;
+					this.axisMotor.rotate(MOTOR_MOVEMENT_SPEED, true);
+					this.axisMotor.waitComplete();
+					degreeCounter+=MOTOR_MOVEMENT_SPEED;
 
 				}
 				break;
@@ -98,27 +102,31 @@ public class axisController{
 			if(samples[1] > 0.8f) {
 				this.axisSensorDistances.put(this.axisSensors[1], 0);
 				this.axisRearSensor = this.axisSensors[1];
-				
+				this.axisMotor.resetTachoCount();
 				while(true) {
-					
-					TouchSen1.fetchSample(samples, 1);
+					System.out.println(degreeCounter);
+					TouchSen1.fetchSample(samples, 0);
 					if(samples[0] > 0.8f) {
-						this.axisSensorDistances.put(this.axisSensors[0], degreeCounter);
-						this.axisFrontSensor = this.axisSensors[1];
+						this.axisSensorDistances.put(this.axisSensors[0], this.axisMotor.getTachoCount());
+						this.axisFrontSensor = this.axisSensors[0];
+						System.out.println("Calibration Done");
 						break;
 					}
-					this.axisMotor.rotate(1, true);
-					degreeCounter++;
+					this.axisMotor.rotate(MOTOR_MOVEMENT_SPEED, true);
+					this.axisMotor.waitComplete();
+					degreeCounter+=MOTOR_MOVEMENT_SPEED;
 
 				}
 				break;
 			}
 
-			this.axisMotor.rotate(-1, true);
+			this.axisMotor.rotate(-MOTOR_MOVEMENT_SPEED, true);
+			this.axisMotor.waitComplete();
 		}
 		
 		//	Set this so we know its distance
 		this.CalibratedDistance = degreeCounter;
+		System.out.println("Calibrated Distance to be " + this.CalibratedDistance);
 		
 		//	We now have the distance, a front and rear sensor therefore 
 		//	we can now have functions to move until rear sensor goes off
@@ -129,11 +137,15 @@ public class axisController{
 	
 	private void goToOrigin() {
 		
+		//	Sends the motor backwards whilst checking the sensor  
+		//	it'll keep going backwards until the sensor is hit
+		//	once hit the move amount is set to 0 and its at the origin
+		
 		SampleProvider rearSample = this.axisRearSensor.getTouchMode();
 		float[] sample = new float[] {0.0f};
 		
 		while(sample[0] < 0.8f) {
-			this.axisMotor.rotate(1, true);
+			this.axisMotor.rotate(-MOTOR_MOVEMENT_SPEED, true);
 			rearSample.fetchSample(sample, 0);
 		}
 		
@@ -142,26 +154,40 @@ public class axisController{
 	
 	public void goDegrees(int Degrees) {
 		
+		//	Picks a sensor to use based on whether were going forwards or backwards
+		//	Then moving a certain amount each time, we move the desired amount
+		//	We use the sensor to make sure we can make that move
+		//	if the sensor is hit, the loop will break ending the move
+		
 		EV3TouchSensor toCheck = Degrees > 0 ? this.axisFrontSensor : this.axisRearSensor;
 		SampleProvider Checker = toCheck.getTouchMode();
-		float samples[] = new float[1];
 		
-		for(int i = 0; i < Degrees; i++) {
+		float samples[] = new float[1];
+		System.out.println("Moving " + Degrees + "*");
+		
+		for(int i = 0; i < Math.abs(Degrees); i+=MOTOR_MOVEMENT_SPEED) {
+			
 			Checker.fetchSample(samples, 0);
+			System.out.println("Turning Motor : time " + i);
+			
 			if(Degrees > 0) {
 				if(samples[0] > 0.8f) {
 					break;
 				}
-				this.axisMotor.rotate(1, true);
-				this.CalibratedDistance++;
-			}
+				
+				this.axisMotor.rotate(MOTOR_MOVEMENT_SPEED, false);
+				this.axisDistanceMoved+= MOTOR_MOVEMENT_SPEED;
+			} 
 			else {
+				
 				if(samples[0] > 0.8f) {
 					break;
 				}
-				this.axisMotor.rotate(-1, true);
-				this.CalibratedDistance--;
+				
+				this.axisMotor.rotate(-MOTOR_MOVEMENT_SPEED, false);
+				this.axisDistanceMoved-= MOTOR_MOVEMENT_SPEED;
 			}
+			this.axisMotor.waitComplete();
 		}
 		
 	}

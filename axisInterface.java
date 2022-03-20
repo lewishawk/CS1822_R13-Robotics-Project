@@ -1,38 +1,259 @@
+import java.util.ArrayList;
 
+import lejos.robotics.geometry.Point;
+import lejos.robotics.navigation.Waypoint;
+import lejos.robotics.pathfinding.Path;
 
 public class axisInterface{
 	
 	private axisController xAxis;
-	private axisController yAxis;
-	//private penController  zPen;
+	private axisController zAxis;
+	private penController  Pen;
+	private ArrayList<String> functionCalls = new ArrayList<String>();
 	
-	public axisInterface(axisController xAxis, axisController yAxis) {
+	public axisInterface(axisController xAxis, axisController zAxis, penController Pen) {
+		
+		//	takes in all needed controllers for the robot to move and function
+		
 		this.xAxis = xAxis;
-		this.yAxis = yAxis;
+		this.zAxis = zAxis;
+		this.Pen = Pen;
+		for(int i = 0; i < 6; i++) {
+			this.functionCalls.add("None");
+		}
+		
+		//	this is called after the axis controllers are calibrated
+		
+		System.out.println("Boundrys");
+		System.out.println(this.xAxis.getAxisLength());
+		System.out.println(this.zAxis.getAxisLength());
 		
 	}
 	
+	//	Due to issues with how the motors affect each other while moving, they have to move seperately
+	//	Therefore they cannot by synced or be moving at the same time
 	
-	//	The Motors Need to move in time with each other therefore we need a way to get and sync the motors at the same time
-	//	We could use the inbuild sync functions on the motors to do this therefore ever movement update would run together
-	//	This means that in here we can use STATES for the printer IE: DownMoving, UpMoving, Stopped
-	//	Then using a Current XY and Next XY we can move them all at the same time and make it more smoothly
-	//	
-	//	So we will do it like this :
-	//	
-	//	xAxis.setSync(new BaseRegulatedMotor { yAxis.getMotor() });
-	//	xAxis.startSync();
-	//	
-	//	...
-	//
-	//	xAxis.goDegree(30);			Do Movements Here
-	//	yAxis.goDegree(30);			Do Movements Here
-	//
-	//	...
-	//
-	//	xAxis.endSync();
-	//
-	//	xAxis.getMotor().waitComplete();
-	//	yAxis.getMotor().waitComplete();
 	
+	public void moveToPoint(Waypoint point, boolean Interpolate) {
+		
+		//	takes in a waypoint and a bool to create a new path between the current point and given waypoint
+		//	if the ShouldInterpolate function returns true and our bool is true, we generate a new path between the points
+		//	the generated path is then passed to FollowGenPath which functions different to FollowPath so certain things dont happen 
+		//	like pen movement and regeneration interpolated paths
+		
+		double currentX = this.xAxis.getCurrentLocation();
+		double currentZ = this.zAxis.getCurrentLocation();
+		Waypoint currentLocal = new Waypoint(currentX, currentZ);
+		
+		
+		if(this.shouldInterpolate(currentLocal, point) && Interpolate) {
+		
+
+
+			Path interpolatedPoints = this.generateInterpolatedPath(currentLocal, point);
+			
+			this.followGenPath(interpolatedPoints, false);
+		}
+		else {
+			
+			//	If we dont interpolate, we find the distance between the given point 
+			//	and pass that into each axis Controller
+			
+			int moveDistanceX = (int) (point.getX() - currentX);
+			
+
+			System.out.println("Moving " + moveDistanceX + "*");
+			this.xAxis.goDegrees(moveDistanceX);
+			
+
+			
+			int moveDistanceZ = (int) (point.getY() - currentZ);
+			System.out.println("Moving " + moveDistanceZ + "*");
+
+
+
+			this.zAxis.goDegrees(moveDistanceZ);
+
+		}
+		
+	}
+	
+	private void followGenPath(Path path, boolean shouldCalibrate) {
+		
+		//	The same fundimentals as followPath with certain behavious removed
+		//	It will not use the putPenUp or putPenDown functions 
+		//	and it purely calls to moveToPoint with no interpolating
+		
+		int pathSize = path.size();
+		
+		for(int i = 0; i < pathSize; i++) {
+			Waypoint nextPoint = path.get(i);
+
+			this.moveToPoint(nextPoint, false);
+			if(shouldCalibrate && i % 5 == 0) {
+
+				this.Recalibrate();
+			}
+		}
+	}
+	
+	//	Follow Path	
+	public void followPath(Path path, boolean shouldCalibrate) {
+		
+		//	has more behvious within this function to start a followPath correctly
+		//	It will move to the starting point first then use putPenDown 
+		//	then call to moveToPoint for each waypoint 
+		//	Once complete it will call putPenUp ensuring its ready to draw another path
+		
+		// Move to start of Path
+		
+		if(!this.isValidPath(path)) {
+			return;
+		}
+		
+		Waypoint startLocal = path.get(0);
+		
+
+		this.moveToPoint(startLocal, false);
+
+		// Pen Down
+		
+		this.Pen.putPenDown();
+		
+		// Run Path
+		
+		int pathSize = path.size();
+
+
+		for(int i = 1; i < pathSize; i++) {
+			Waypoint nextPoint = path.get(i);
+			System.out.println("Turn " + i);
+			System.out.println("Going to " + nextPoint.x + ", " + nextPoint.y);
+
+		
+			this.moveToPoint(nextPoint, true);
+			
+			if(shouldCalibrate && i % 5 == 0) {
+			
+				this.Recalibrate();
+			}
+		}
+		
+		// Pen Up
+		
+		this.Pen.putPenUp();
+
+		
+	}
+	
+	private boolean isValidPath(Path path) {
+		
+		//	Goes over every point within a path and make sure that 
+		//	every point is within the boundries 
+		//	if it isnt then the whole path is deemed invalid and won't run
+		
+		int xMax = this.xAxis.getAxisLength();
+		int zMax = this.zAxis.getAxisLength();
+		
+		
+		for(int i = 0; i < path.size(); i++) {
+			
+			Waypoint point = path.get(i);
+			
+			if(point.getX() > xMax || point.getY() > zMax || point.getX() < 0 || point.getY() < 0)
+				return false;
+		}
+		
+		return true;
+		
+	}
+	
+	public boolean shouldInterpolate(Waypoint p1, Waypoint p2) {
+		
+		//	looks at the 2 points given and desides based 
+		//	on distance and angle whether we should interpolate
+		//	making sure that if a line is basically straight it wont create extra points slowing the robot down
+		//	and if the points are basically next to each other it'll just work normally and not make more points
+		
+		double distance = p1.distance(p2.getX(), p2.getY());
+		
+		double gradient = ( p2.getX() - p1.getX() ) / ( p2.getY() - p1.getY() );
+		
+		if(distance <= this.xAxis.getAxisLength() * 0.05 || gradient % 90.0 <= 3.0 || gradient % 90 >= 86.0 ) {
+			return false;
+		}
+		
+		return true;
+	}
+	
+	//	Generate Interpolated Path
+	private Path generateInterpolatedPath(Waypoint p1, Waypoint p2) {
+		Path returnPath = new Path();
+		
+		//	will use the Two given waypoints and an interpolation value to generate new points between them
+		//	our interpolation value changes the size between each value and how many new points there will be
+		//	out loop goes through using the "float counter" as a percentage of how far between the Two points we are 
+		//	using the counter variable we generate a new point between the two points using the counter as a %
+		//	of how far from the first one we are
+		
+		float interpolationValue = 10f;
+		double distance = p1.distance(p2.getX(), p2.getY());
+		float counter = 0.0F;
+		float x0 = (float) p1.getX();
+		float y0 = (float) p1.getY();
+		float x1 = (float) p2.getX();
+		float y1 = (float) p2.getY();
+		
+		for(int i = 0; i < interpolationValue; i++) {
+			float dt = (float) (distance * counter);
+			float tRatio = (float) (dt / distance);
+			
+			float xt = ((1-tRatio) * x0 + tRatio *x1);
+			float yt = ((1-tRatio) * y0 + tRatio *y1);
+			
+			Waypoint newPoint = new Waypoint(xt,yt);
+			returnPath.add(newPoint);
+			counter += (interpolationValue)/100f;	
+		}
+		
+		return returnPath;
+	}
+	
+	//	Recalibrate
+	private void Recalibrate() {
+
+		//penUp
+		
+		//goToOrigin
+		//goToPreviousLocation
+		
+		//penDown
+	}
+	
+	
+	public double getXScalar() {
+		
+		//	returns 1 or a number to make a point line up square on each axis
+		
+		double xLen = this.xAxis.getAxisLength();
+		double yLen = this.zAxis.getAxisLength();
+		
+		if(xLen > yLen) {
+			return xLen / yLen;
+		}
+		return 1;
+	}
+	
+	public double getYScalar() {
+		
+		//	returns 1 or a number to make a point line up square on each axis
+		
+		double xLen = this.xAxis.getAxisLength();
+		double yLen = this.zAxis.getAxisLength();
+		
+		if(yLen > xLen) {
+			return yLen / xLen;
+		}
+		return 1;
+	}
 }
