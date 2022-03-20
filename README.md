@@ -1,14 +1,11 @@
 # CS1822_R13-Robotics-Project
 
-Developed Code:
-- Movement Controller
-  - things to add
-  - Node to Node Movement
-  - True running against rotate(sd, true)
+<h1>PRINTER</h1>
 
-Project Ideas:
-- Road Mapper: Writes on paper different features on a road surface(e.g road markings, bus stop). Uses coloured markers to denote different features. Node to node movement will aid in making this possible.
+---
 
-Dead Ideas:
-- Nerf Gun face recognition: Shoots a dart when it recognises a specific printed photo of (potentially) someone's face. Could be potentially dangerous, but could be overcome by using a target. Face recognition (using neural networks) have a steep learning curve, so could be difficult to complete within the time frame. Face recognition is limited by the hardware (in particular the sensors) and processing time.
-- EV3 BotNET (self explanatory really).
+Code For Robot:
+- printer.java  : Inits everything, code to build off of
+- axisInterface : Controls all the axis controllers and pen controller, what we use in printer.java to interact with the robot
+- axisController: Controls a single axis allowing it to calibrate the axis and move the axis to any point on that axis
+- penController : Controls the pen using a state machine to decide to move the pen up or down with calls from our axisInterface
