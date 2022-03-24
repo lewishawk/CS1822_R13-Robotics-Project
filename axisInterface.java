@@ -1,5 +1,7 @@
 import java.util.ArrayList;
 
+import lejos.hardware.Battery;
+import lejos.hardware.Button;
 import lejos.robotics.geometry.Point;
 import lejos.robotics.navigation.Waypoint;
 import lejos.robotics.pathfinding.Path;
@@ -45,10 +47,10 @@ public class axisInterface{
 		double currentZ = this.zAxis.getCurrentLocation();
 		Waypoint currentLocal = new Waypoint(currentX, currentZ);
 		
-		
+		shouldEnd();
 		if(this.shouldInterpolate(currentLocal, point) && Interpolate) {
 		
-
+			shouldEnd();
 
 			Path interpolatedPoints = this.generateInterpolatedPath(currentLocal, point);
 			
@@ -58,7 +60,7 @@ public class axisInterface{
 			
 			//	If we dont interpolate, we find the distance between the given point 
 			//	and pass that into each axis Controller
-			
+			shouldEnd();
 			int moveDistanceX = (int) (point.getX() - currentX);
 			
 
@@ -66,7 +68,7 @@ public class axisInterface{
 			this.xAxis.goDegrees(moveDistanceX);
 			
 
-			
+			shouldEnd();
 			int moveDistanceZ = (int) (point.getY() - currentZ);
 			System.out.println("Moving " + moveDistanceZ + "*");
 
@@ -85,10 +87,10 @@ public class axisInterface{
 		//	and it purely calls to moveToPoint with no interpolating
 		
 		int pathSize = path.size();
-		
+		shouldEnd();
 		for(int i = 0; i < pathSize; i++) {
 			Waypoint nextPoint = path.get(i);
-
+			shouldEnd();
 			this.moveToPoint(nextPoint, false);
 			if(shouldCalibrate && i % 5 == 0) {
 
@@ -107,9 +109,14 @@ public class axisInterface{
 		
 		// Move to start of Path
 		
-		if(!this.isValidPath(path)) {
+		if(!this.isValidPath(path)) {	//	if the path is invalid, we return and dont run the path 
 			return;
 		}
+		
+		if(this.isBatteryLow()) {	//	if battery low returns true, we return and don't run the path
+			return;
+		}
+		shouldEnd();
 		
 		Waypoint startLocal = path.get(0);
 		
@@ -130,7 +137,7 @@ public class axisInterface{
 			System.out.println("Turn " + i);
 			System.out.println("Going to " + nextPoint.x + ", " + nextPoint.y);
 
-		
+			shouldEnd();
 			this.moveToPoint(nextPoint, true);
 			
 			if(shouldCalibrate && i % 5 == 0) {
@@ -155,7 +162,7 @@ public class axisInterface{
 		int xMax = this.xAxis.getAxisLength();
 		int zMax = this.zAxis.getAxisLength();
 		
-		
+		shouldEnd();
 		for(int i = 0; i < path.size(); i++) {
 			
 			Waypoint point = path.get(i);
@@ -178,7 +185,7 @@ public class axisInterface{
 		double distance = p1.distance(p2.getX(), p2.getY());
 		
 		double gradient = ( p2.getX() - p1.getX() ) / ( p2.getY() - p1.getY() );
-		
+		shouldEnd();
 		if(distance <= this.xAxis.getAxisLength() * 0.05 || gradient % 90.0 <= 3.0 || gradient % 90 >= 86.0 ) {
 			return false;
 		}
@@ -195,7 +202,7 @@ public class axisInterface{
 		//	out loop goes through using the "float counter" as a percentage of how far between the Two points we are 
 		//	using the counter variable we generate a new point between the two points using the counter as a %
 		//	of how far from the first one we are
-		
+		shouldEnd();
 		float interpolationValue = 10f;
 		double distance = p1.distance(p2.getX(), p2.getY());
 		float counter = 0.0F;
@@ -207,7 +214,7 @@ public class axisInterface{
 		for(int i = 0; i < interpolationValue; i++) {
 			float dt = (float) (distance * counter);
 			float tRatio = (float) (dt / distance);
-			
+			shouldEnd();
 			float xt = ((1-tRatio) * x0 + tRatio *x1);
 			float yt = ((1-tRatio) * y0 + tRatio *y1);
 			
@@ -217,6 +224,17 @@ public class axisInterface{
 		}
 		
 		return returnPath;
+	}
+	
+	private boolean isBatteryLow() {
+		double lowBatteryThreshhold = 0.2;
+		return (Battery.getVoltage() / 9.0) > lowBatteryThreshhold;
+	}
+	
+	private void shouldEnd() {
+		if(Button.ENTER.isDown()) {
+			System.exit(0);
+		}
 	}
 	
 	//	Recalibrate

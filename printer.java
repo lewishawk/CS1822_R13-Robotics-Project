@@ -52,6 +52,14 @@ public class printer{
 		
 		//	create the axisInterface
 		//	gets the scale values from that for generating a circle later
+		System.out.println("Printer : v12");
+		System.out.println("-------------");
+		System.out.println("-- Authors --");
+		System.out.println("Joshua Barrass");
+		System.out.println("Lewis Hawkesford");
+		System.out.println("Iffet Aygun");
+		
+		Button.ENTER.waitForPressAndRelease();
 		
 		axisInterface printerController = new axisInterface(sideAxis, topAxis, pen);
 		double xScalar = printerController.getXScalar();
