@@ -144,8 +144,8 @@ public class printer{
 		double xQuarter = printerController.getXLength()/4;
 		double yQuarter = printerController.getYLength()/4;
 		
-		double xQuarterTo= printerController.getXLength()/(3/4);
-		double yQuarterTo = printerController.getYLength()/(3/4);
+		double xQuarterTo= printerController.getXLength()*(3/4);
+		double yQuarterTo = printerController.getYLength()*(3/4);
 		
 		newPath.add(new Waypoint(xQuarter,yQuarter));
 		newPath.add(new Waypoint(xQuarter, yQuarterTo));
