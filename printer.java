@@ -13,6 +13,9 @@
 //	Imports
 
 import lejos.hardware.Button;
+import lejos.hardware.Key;
+import lejos.hardware.KeyListener;
+import lejos.hardware.lcd.LCD;
 import lejos.hardware.motor.BaseRegulatedMotor;
 import lejos.hardware.motor.EV3LargeRegulatedMotor;
 import lejos.hardware.port.MotorPort;
@@ -60,8 +63,107 @@ public class printer{
 		System.out.println("Iffet Aygun");
 		
 		Button.ENTER.waitForPressAndRelease();
-		
 		axisInterface printerController = new axisInterface(sideAxis, topAxis, pen);
+		int choice = 1;
+		
+		while(!Button.ENTER.isUp())
+		{
+			LCD.clear();
+			System.out.println(String.format("Choice: %s",  choice));
+			System.out.println(choice == 1 ? "> Circle" : "  Circle");
+			System.out.println(choice == 2 ? "> Square" : "  Sqaure");
+			System.out.println(choice == 3 ? "> Boundries" : "  Boundries");
+			
+			while(!Button.ENTER.isUp()) {
+				
+				if(Button.DOWN.isDown()) {
+					choice ++;
+					if(choice > 3 )
+						choice = 3;
+					break;
+				}
+				
+				if(Button.UP.isDown()) {
+					choice--;
+					if(choice < 1) {
+						choice = 1;
+					}
+					break;
+				}
+				
+			}
+			
+		}
+		
+		LCD.clear();
+		
+		switch(choice) {
+			case 1:
+				System.out.println("Drawing Circle");
+				drawCircle(printerController);
+				break;
+			case 2:
+				System.out.println("Drawing Square");
+				drawSquare(printerController);
+				break;
+			case 3:
+				System.out.println("Drawing Boundaries");
+				drawBoundaries(printerController);
+				break;
+			default:
+				
+				break;
+		
+		}
+		
+		
+
+		Button.ENTER.waitForPressAndRelease();
+
+		
+		
+	}
+	
+	private static void drawBoundaries(axisInterface printerController) {
+		
+		Path newPath = new Path();
+		double xMax = printerController.getXLength();
+		double yMax = printerController.getYLength();
+		newPath.add(new Waypoint(0,0));
+		newPath.add(new Waypoint(xMax,0));
+		newPath.add(new Waypoint(xMax, yMax));
+		newPath.add(new Waypoint(0, yMax));
+		newPath.add(new Waypoint(0,0));
+		
+		printerController.followPath(newPath, false);
+	}
+	
+	private static void drawSquare(axisInterface printerController) {
+		
+		Path newPath = new Path();
+		double xQuarter = printerController.getXLength()/4;
+		double yQuarter = printerController.getYLength()/4;
+		
+		double xQuarterTo= printerController.getXLength()/(3/4);
+		double yQuarterTo = printerController.getYLength()/(3/4);
+		
+		newPath.add(new Waypoint(xQuarter,yQuarter));
+		newPath.add(new Waypoint(xQuarter, yQuarterTo));
+		newPath.add(new Waypoint(xQuarterTo, yQuarterTo));
+		newPath.add(new Waypoint(xQuarterTo, yQuarter));
+		newPath.add(new Waypoint(xQuarter, yQuarter));
+//+-	 -+		
+//|	x---x |		(.25, .25)
+//				(.25, .75)
+//	x---x		(.75, .75)
+//				(.75, .25)
+//				(.25, .25)
+		
+		printerController.followPath(newPath, false);
+	}
+	
+	private static void drawCircle(axisInterface printerController) {
+		
 		double xScalar = printerController.getXScalar();
 		double yScalar = printerController.getYScalar();
 		Path newPath = new Path();
@@ -70,7 +172,7 @@ public class printer{
 		
 		double pointAmount = 36;
 		double AngleChange = 360 / pointAmount ;
-        double CircleRadius = 50.0;
+        double CircleRadius = printerController.getXLength() / 3.0;
         
         double CurrentAngle = 0.0;
 
@@ -86,13 +188,6 @@ public class printer{
         
         //	Makes it follow a path
         printerController.followPath(newPath, false);
-
-		Button.ENTER.waitForPressAndRelease();
-
-		
-		
 	}
-	
-	
 	
 }

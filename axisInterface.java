@@ -262,6 +262,12 @@ public class axisInterface{
 		return 1;
 	}
 	
+	public double getXLength() {
+		return this.xAxis.getAxisLength();
+	}
+	
+	
+	
 	public double getYScalar() {
 		
 		//	returns 1 or a number to make a point line up square on each axis
@@ -273,5 +279,9 @@ public class axisInterface{
 			return yLen / xLen;
 		}
 		return 1;
+	}
+	
+	public double getYLength() {
+		return this.zAxis.getAxisLength();
 	}
 }
