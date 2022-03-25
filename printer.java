@@ -52,7 +52,7 @@ public class printer{
 	
 	
 	public static void main(String args[]) {
-		
+		LCD.clear();
 		//	create the axisInterface
 		//	gets the scale values from that for generating a circle later
 		System.out.println("Printer : v12");
@@ -64,63 +64,60 @@ public class printer{
 		
 		Button.ENTER.waitForPressAndRelease();
 		axisInterface printerController = new axisInterface(sideAxis, topAxis, pen);
-		int choice = 1;
-		
-		while(!Button.ENTER.isUp())
-		{
-			LCD.clear();
-			System.out.println(String.format("Choice: %s",  choice));
-			System.out.println(choice == 1 ? "> Circle" : "  Circle");
-			System.out.println(choice == 2 ? "> Square" : "  Sqaure");
-			System.out.println(choice == 3 ? "> Boundries" : "  Boundries");
-			
-			while(!Button.ENTER.isUp()) {
+		while(true) {
+			int choice = 1;
+			while(!Button.ENTER.isUp())
+			{
+				LCD.clear();
+				System.out.println(String.format("Choice: %s",  choice));
+				System.out.println(choice == 1 ? "> Circle" : "  Circle");
+				System.out.println(choice == 2 ? "> Square" : "  Sqaure");
+				System.out.println(choice == 3 ? "> Boundries" : "  Boundries");
+				System.out.println(choice == 3 ? "> Exit" : "  Exit");
 				
-				if(Button.DOWN.isDown()) {
-					choice ++;
-					if(choice > 3 )
-						choice = 3;
-					break;
-				}
-				
-				if(Button.UP.isDown()) {
-					choice--;
-					if(choice < 1) {
-						choice = 1;
+				while(!Button.ENTER.isUp()) {
+					
+					if(Button.DOWN.isDown()) {
+						choice ++;
+						if(choice > 4 )
+							choice = 4;
+						break;
 					}
-					break;
+					
+					if(Button.UP.isDown()) {
+						choice--;
+						if(choice < 1) {
+							choice = 1;
+						}
+						break;
+					}
+					
 				}
 				
 			}
 			
-		}
-		
-		LCD.clear();
-		
-		switch(choice) {
-			case 1:
-				System.out.println("Drawing Circle");
-				drawCircle(printerController);
-				break;
-			case 2:
-				System.out.println("Drawing Square");
-				drawSquare(printerController);
-				break;
-			case 3:
-				System.out.println("Drawing Boundaries");
-				drawBoundaries(printerController);
-				break;
-			default:
-				
-				break;
-		
-		}
-		
-		
+			LCD.clear();
+			
+			switch(choice) {
+				case 1:
+					System.out.println("Drawing Circle");
+					drawCircle(printerController);
+					break;
+				case 2:
+					System.out.println("Drawing Square");
+					drawSquare(printerController);
+					break;
+				case 3:
+					System.out.println("Drawing Boundaries");
+					drawBoundaries(printerController);
+					break;
+				case 4:
+					System.exit(0);
+					break;
+			
+			}
 
-		Button.ENTER.waitForPressAndRelease();
-
-		
+		}
 		
 	}
 	
