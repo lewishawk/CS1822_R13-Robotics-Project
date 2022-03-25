@@ -184,7 +184,7 @@ public class axisInterface{
 		
 		double distance = p1.distance(p2.getX(), p2.getY());
 		
-		double gradient = ( p2.getX() - p1.getX() ) / ( p2.getY() - p1.getY() );
+		double gradient = Math.toDegrees(Math.asin(( p2.getX() - p1.getX() ) / ( p2.getY() - p1.getY() )));
 		shouldEnd();
 		if(distance <= this.xAxis.getAxisLength() * 0.05 || gradient % 90.0 <= 3.0 || gradient % 90 >= 86.0 ) {
 			return false;
