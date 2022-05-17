@@ -61,22 +61,24 @@ public class printer{
 		System.out.println("Joshua Barrass");
 		System.out.println("Lewis Hawkesford");
 		System.out.println("Iffet Aygun");
+		System.out.println("Press Left To Continue");
 		
-		Button.ENTER.waitForPressAndRelease();
+		Button.LEFT.waitForPressAndRelease();
 		axisInterface printerController = new axisInterface(sideAxis, topAxis, pen);
+		
 		while(true) {
-			int choice = 1;
-			while(!Button.ENTER.isUp())
+			int choice = 0;
+			while(Button.LEFT.isUp())
 			{
 				LCD.clear();
 				System.out.println(String.format("Choice: %s",  choice));
 				System.out.println(choice == 1 ? "> Circle" : "  Circle");
 				System.out.println(choice == 2 ? "> Square" : "  Sqaure");
 				System.out.println(choice == 3 ? "> Boundries" : "  Boundries");
-				System.out.println(choice == 3 ? "> Exit" : "  Exit");
+				System.out.println(choice == 4 ? "> Exit" : "  Exit");
+				System.out.println("Press Left To Draw");
 				
-				while(!Button.ENTER.isUp()) {
-					
+				while(Button.LEFT.isUp()) {
 					if(Button.DOWN.isDown()) {
 						choice ++;
 						if(choice > 4 )
@@ -91,7 +93,6 @@ public class printer{
 						}
 						break;
 					}
-					
 				}
 				
 			}
@@ -114,6 +115,8 @@ public class printer{
 				case 4:
 					System.exit(0);
 					break;
+				default:
+					break;
 			
 			}
 
@@ -131,7 +134,7 @@ public class printer{
 		newPath.add(new Waypoint(xMax, yMax));
 		newPath.add(new Waypoint(0, yMax));
 		newPath.add(new Waypoint(0,0));
-		
+		System.out.println("Made Path calling");
 		printerController.followPath(newPath, false);
 	}
 	
@@ -155,7 +158,7 @@ public class printer{
 //	x---x		(.75, .75)
 //				(.75, .25)
 //				(.25, .25)
-		
+		System.out.println("Made Path calling");
 		printerController.followPath(newPath, false);
 	}
 	
@@ -169,7 +172,8 @@ public class printer{
 		
 		double pointAmount = 36;
 		double AngleChange = 360 / pointAmount ;
-        double CircleRadius = printerController.getXLength() / 3.0;
+        double CircleRadius = printerController.getXLength() / 4.0;
+        double circleOffset = printerController.getXLength() / 2.0;
         
         double CurrentAngle = 0.0;
 
@@ -178,12 +182,13 @@ public class printer{
             double LocalX = (CircleRadius * Math.cos(Math.toRadians(CurrentAngle)));
             double LocalY = (CircleRadius * Math.sin(Math.toRadians(CurrentAngle)));
             
-            newPath.add(new Waypoint((LocalX + CircleRadius) * xScalar, (LocalY + CircleRadius) * yScalar));
+            newPath.add(new Waypoint((LocalX + circleOffset) * xScalar, (LocalY + circleOffset) * yScalar));
 
             CurrentAngle += AngleChange;
 		}
         
         //	Makes it follow a path
+		System.out.println("Made Path calling");
         printerController.followPath(newPath, false);
 	}
 	

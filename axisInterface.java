@@ -113,9 +113,9 @@ public class axisInterface{
 			return;
 		}
 		
-		if(this.isBatteryLow()) {	//	if battery low returns true, we return and don't run the path
-			return;
-		}
+		//if(this.isBatteryLow()) {	//	if battery low returns true, we return and don't run the path
+		//	return;
+		//}
 		shouldEnd();
 		
 		Waypoint startLocal = path.get(0);
